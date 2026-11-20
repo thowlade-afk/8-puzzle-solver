@@ -1,3 +1,4 @@
+
 import random
 import tkinter as tk
 from tkinter import messagebox
@@ -20,7 +21,7 @@ STEP_DELAY_MS = 600
 
 
 def neighbors_of_blank(state):
-    """Return board indexes the blank can swap with (used only to shuffle)."""
+    """Return board indexes the blank can swap with (used for shuffling and clicks)."""
     b = state.index(0)
     r, c = divmod(b, 3)
     out = []
@@ -62,14 +63,20 @@ class PuzzleApp:
         self.step = 0
         self.animating = False
         self.after_id = None
+        self.player_moves = 0
 
         self.canvas = tk.Canvas(
             root, width=BOARD_PX, height=BOARD_PX, bg=BOARD_BG, highlightthickness=0
         )
         self.canvas.grid(row=0, column=0, columnspan=2, padx=20, pady=(20, 10))
+        self.canvas.bind("<Button-1>", self.on_click)
 
         self.status = tk.Label(
-            root, text="Press Solve to run A*.", bg=BG, font=FONT_UI, height=2
+            root,
+            text="Press Solve.",
+            bg=BG,
+            font=FONT_UI,
+            height=2,
         )
         self.status.grid(row=1, column=0, columnspan=2)
 
@@ -108,6 +115,31 @@ class PuzzleApp:
                     fill=TILE_FG,
                 )
 
+    # ---- playing --------------------------------------------------------
+    def on_click(self, event):
+        """Slide the clicked tile into the blank if they touch."""
+        if self.animating:
+            return
+
+        col = (event.x - PAD) // (TILE + GAP)
+        row = (event.y - PAD) // (TILE + GAP)
+        if not (0 <= col < 3 and 0 <= row < 3):
+            return
+        i = row * 3 + col
+
+        blank = self.board.index(0)
+        if i not in neighbors_of_blank(self.board):
+            return
+
+        self.board[blank], self.board[i] = self.board[i], self.board[blank]
+        self.player_moves += 1
+        self.draw(self.board)
+
+        if self.board == GOAL:
+            self.status.config(text=f"You solved it in {self.player_moves} moves!")
+        else:
+            self.status.config(text=f"Moves: {self.player_moves}")
+
     # ---- buttons --------------------------------------------------------
     def set_buttons(self, enabled):
         state = tk.NORMAL if enabled else tk.DISABLED
@@ -117,8 +149,9 @@ class PuzzleApp:
     def randomize(self):
         self.board = random_board()
         self.solution = []
+        self.player_moves = 0
         self.draw(self.board)
-        self.status.config(text="New board. Press Solve to run A*.")
+        self.status.config(text="New board. Press Solve.")
 
     def solve(self):
         if self.animating:
@@ -172,6 +205,7 @@ class PuzzleApp:
         else:
             self.board = state[:]
             self.animating = False
+            self.player_moves = 0
             self.set_buttons(True)
             self.status.config(text=f"Solved in {last} moves.")
 
