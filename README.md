@@ -9,6 +9,7 @@ No other packages or Internet needed
 
 ## How to run
 put app.py and solver.py in the same folder, open the terminal in that folder and run py app.py
+As was stated in the PDF we used AI help to make the app.py while solver.py and TestSolver.py are AI Free
 
 ## How to use
 
